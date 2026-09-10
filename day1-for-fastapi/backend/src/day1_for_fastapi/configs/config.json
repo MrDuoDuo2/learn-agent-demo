@@ -1,0 +1,5 @@
+{
+  "api_url": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+  "api_key": "434171cd-0a49-4763-aaae-e58e0fc52e50",
+  "model": "deepseek-v4-pro-ga-260813"
+}
