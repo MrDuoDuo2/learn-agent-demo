@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
-import type { Conversation } from '../types/chat'
+import type { Conversation, ConversationMode } from '../types/chat'
 
 const props = defineProps<{
   conversation?: Conversation
@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   create: []
+  'set-mode': [mode: ConversationMode]
 }>()
 
 const messageList = ref<HTMLElement>()
@@ -31,6 +32,10 @@ function authorLabel(role: Conversation['messages'][number]['role']) {
   return role === 'user' ? '\u6211' : 'Day1'
 }
 
+function connectionLabel(mode?: ConversationMode) {
+  return mode === 'search' ? '\u641c\u7d22 API' : 'API \u6a21\u5f0f'
+}
+
 watch(() => props.conversation?.messages.length, scrollToBottom)
 </script>
 
@@ -41,7 +46,27 @@ watch(() => props.conversation?.messages.length, scrollToBottom)
         <span class="eyebrow">CONVERSATION</span>
         <h1>{{ conversation?.title || '\u5f00\u59cb\u4e00\u6b21\u65b0\u7684\u95ee\u7b54' }}</h1>
       </div>
-      <div class="connection-status"><span class="status-dot" /> &#26412;&#22320;&#27169;&#24335;</div>
+      <div class="chat-header__actions">
+        <div class="mode-switch" role="group" aria-label="&#23545;&#35805;&#27169;&#24335;">
+          <button
+            type="button"
+            :class="{ 'mode-switch__button--active': conversation?.mode === 'chat' }"
+            :disabled="!conversation || Boolean(conversation.messages.length)"
+            @click="emit('set-mode', 'chat')"
+          >
+            &#38382;&#31572;
+          </button>
+          <button
+            type="button"
+            :class="{ 'mode-switch__button--active': conversation?.mode === 'search' }"
+            :disabled="!conversation || Boolean(conversation.messages.length)"
+            @click="emit('set-mode', 'search')"
+          >
+            &#25628;&#32034;
+          </button>
+        </div>
+        <div class="connection-status"><span class="status-dot" /> {{ connectionLabel(conversation?.mode) }}</div>
+      </div>
     </header>
 
     <div ref="messageList" class="message-list">
@@ -64,7 +89,26 @@ watch(() => props.conversation?.messages.length, scrollToBottom)
               <strong>{{ authorLabel(message.role) }}</strong>
               <time>{{ formatTime(message.createdAt) }}</time>
             </div>
-            <p>{{ message.content }}</p>
+            <div v-if="message.kind === 'search'" class="search-results">
+              <a
+                v-for="(result, index) in message.searchResults"
+                :key="`${message.id}-${result.href}-${index}`"
+                class="search-result"
+                :href="result.href"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span class="search-result__index">{{ String(index + 1).padStart(2, '0') }}</span>
+                <span class="search-result__body">
+                  <strong>{{ result.title || result.href }}</strong>
+                  <span v-if="result.body">{{ result.body }}</span>
+                  <small>{{ result.href }}</small>
+                </span>
+                <span class="search-result__arrow">&#8599;</span>
+              </a>
+              <p v-if="!message.searchResults?.length" class="search-result__empty">{{ message.content }}</p>
+            </div>
+            <p v-else>{{ message.content }}</p>
           </div>
         </div>
       </div>

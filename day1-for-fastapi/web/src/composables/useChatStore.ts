@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import type { ChatStore, Conversation, Message } from '../types/chat'
+import type { ChatStore, Conversation, ConversationMode, Message, SearchResult } from '../types/chat'
 
 const STORAGE_KEY = 'day1-chat-store'
 
@@ -15,7 +15,19 @@ function readStoredState(): ChatStore {
     if (!Array.isArray(parsed.conversations)) return emptyStore()
     return {
       activeConversationId: parsed.activeConversationId ?? null,
-      conversations: parsed.conversations,
+      conversations: parsed.conversations.map((conversation) => ({
+        ...conversation,
+        mode: conversation.mode === 'search' ? 'search' : 'chat',
+        messages: Array.isArray(conversation.messages)
+          ? conversation.messages.map((message) => ({
+              ...message,
+              kind: message.kind === 'search' ? 'search' : message.kind,
+              searchResults: Array.isArray(message.searchResults)
+                ? (message.searchResults as SearchResult[])
+                : undefined,
+            }))
+          : [],
+      })),
     }
   } catch {
     return emptyStore()
@@ -28,13 +40,14 @@ function makeId() {
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-function makeConversation(): Conversation {
+function makeConversation(mode: ConversationMode = 'chat'): Conversation {
   const timestamp = new Date().toISOString()
   return {
     id: makeId(),
     title: '\u65b0\u5bf9\u8bdd',
     createdAt: timestamp,
     updatedAt: timestamp,
+    mode,
     messages: [],
   }
 }
@@ -53,12 +66,20 @@ export function useChatStore() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.value))
   }
 
-  const createConversation = () => {
-    const conversation = makeConversation()
+  const createConversation = (mode: ConversationMode = 'chat') => {
+    const conversation = makeConversation(mode)
     state.value.conversations.push(conversation)
     state.value.activeConversationId = conversation.id
     save()
     return conversation
+  }
+
+  const setConversationMode = (mode: ConversationMode) => {
+    const conversation = activeConversation.value
+    if (!conversation || conversation.messages.length > 0) return false
+    conversation.mode = mode
+    save()
+    return true
   }
 
   const selectConversation = (id: string) => {
@@ -96,17 +117,24 @@ export function useChatStore() {
     save()
   }
 
-  const addAssistantMessage = (content: string, conversationId = activeConversationId.value) => {
+  const addAssistantMessage = (
+    content: string,
+    conversationId = activeConversationId.value,
+    options: { kind?: 'text' | 'search'; searchResults?: SearchResult[] } = {},
+  ) => {
     const trimmed = content.trim()
     const conversation = state.value.conversations.find(({ id }) => id === conversationId)
     if (!trimmed || !conversation) return
     const now = new Date().toISOString()
-    conversation.messages.push({
+    const message: Message = {
       id: makeId(),
       role: 'assistant',
       content: trimmed,
       createdAt: now,
-    })
+    }
+    if (options.kind) message.kind = options.kind
+    if (options.searchResults) message.searchResults = options.searchResults
+    conversation.messages.push(message)
     conversation.updatedAt = now
     save()
   }
@@ -116,6 +144,7 @@ export function useChatStore() {
     activeConversationId,
     activeConversation,
     createConversation,
+    setConversationMode,
     selectConversation,
     deleteConversation,
     addUserMessage,
