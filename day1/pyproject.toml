@@ -1,0 +1,17 @@
+[project]
+name = "day1-async-llm"
+version = "0.1.0"
+description = "A minimal async LLM client learning project."
+authors = [{ name = "Learner", email = "learner@example.com" }]
+requires-python = ">=3.9,<4.0"
+dependencies = [
+    "aiohttp>=3.9,<3.10",
+    "pydantic>=2,<3",
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

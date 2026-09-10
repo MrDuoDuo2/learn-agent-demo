@@ -1,0 +1,20 @@
+[project]
+name = "day1-for-fastapi"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "mrduoduo",email = "nmbh1122@126.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi-cli>=0.0.32",
+    "fastapi[standard]>=0.141.1",
+]
+
+[tool.poetry]
+packages = [{include = "day1_for_fastapi", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
