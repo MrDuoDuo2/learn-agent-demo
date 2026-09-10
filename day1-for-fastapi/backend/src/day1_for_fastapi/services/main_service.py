@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from .llm_client import LLMClient
+from .search_service import search as search_web
 
 PACKAGE_ROOT = Path(__file__).parent.parent
 config_path = PACKAGE_ROOT / "configs" / "config.json"
@@ -58,3 +59,7 @@ async def chat(message: str):
         result = await client.request(message)
 
     return result
+
+
+async def search(message: str):
+    return await search_web(message)
